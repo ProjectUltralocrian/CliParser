@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cstring>
 #include <iostream>
+#include <cassert>
 
 using namespace std::ranges::views;
 
@@ -31,7 +32,7 @@ namespace pul
     std::vector<CliArg>::const_iterator CliApp::get_arg_from_config(char short_name) const
     {
         return std::ranges::find_if(m_args_config, [=](const auto &arg)
-                                    { return std::tolower(short_name) == std::tolower(arg.short_name); });
+                                    { return short_name == arg.short_name; });
     }
 
     void CliApp::print_help() const
@@ -43,7 +44,7 @@ namespace pul
         std::cout << "Options and flags\n";
         for (const auto &arg : m_args_config)
         {
-            std::cout << "-" << arg.short_name << '\t' << "--" << arg.long_name << '\t' << (arg.needs_arg ? "<arg>\t" : "\t") << arg.description << '\n';
+            std::cout << std::format("-{0} --{1:25s}  {2:45s}\n", arg.short_name, arg.long_name + (arg.needs_arg ? " + <arg> " : ""), arg.description);
         }
         std::cout << "\n******************************************************\n";
     }
@@ -58,12 +59,12 @@ namespace pul
         std::cout << "USAGE: " << m_usage << std::endl;
     }
 
-    CliParsedArgs CliApp::parse_args(int argc, char **argv)
+    std::tuple<ParseResult, CliParsedArgs> CliApp::parse_args(int argc, char **argv)
     {
         CliParsedArgs output;
         for (int i = 0; i < argc; ++i)
         {
-            bool inserted = false;
+            assert(argv[i] && argv[i][0]);
             if (argv[i][0] == '-')
             {
                 bool short_arg = argv[i][1] != '-';
@@ -73,17 +74,18 @@ namespace pul
                 }
                 if (short_arg)
                 {
-                    for (size_t j = 1; argv[i][j] != 0; ++j)
+                    auto curr_pos = argv[i];
+                    for (size_t j = 1; curr_pos[j] != 0; ++j)
                     {
-                        inserted = insert_arg_if_valid(argc, argv, i, output, argv[i][j]);
+                        insert_arg_if_valid(argc, argv, i, output, curr_pos[j]);
                     }
                 }
                 else
                 {
-                    inserted = insert_arg_if_valid(argc, argv, i, output, argv[i] + 2);
+                    insert_arg_if_valid(argc, argv, i, output, argv[i] + 2);
                 }
             }
-            else if (!inserted)
+            else
             {
                 output.args.emplace_back(argv[i]);
             }
@@ -91,12 +93,12 @@ namespace pul
         if (output.flags.contains('h'))
         {
             print_help();
-            exit(EXIT_SUCCESS);
+            return {ParseResult::HelpRequested, output};
         }
         if (output.flags.contains('v'))
         {
             print_version();
-            exit(EXIT_SUCCESS);
+            return {ParseResult::VersionRequested, output};
         }
 
         auto not_provided_mandatory = filter(m_args_config, [](const CliArg &arg)
@@ -126,9 +128,9 @@ namespace pul
             {
                 std::cerr << "Not provided: " << "-" << c.short_name << "/--" << c.long_name << std::endl;
             }
-            panic("Not all required arguments have been provided.");
+            return {ParseResult::Error, output};
         }
-        return output;
+        return {ParseResult::Ok, output};
     }
 
     AppBuilder::AppBuilder(const std::string &name) : m_app_name{name}

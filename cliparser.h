@@ -9,6 +9,14 @@
 
 namespace pul
 {
+    enum class ParseResult
+    {
+        Ok,
+        HelpRequested,
+        VersionRequested,
+        Error
+    };
+
     class CliArg
     {
     private:
@@ -54,7 +62,7 @@ namespace pul
 
         void print_help() const;
         void print_version() const;
-        CliParsedArgs parse_args(int argc, char **argv);
+        std::tuple<ParseResult, CliParsedArgs> parse_args(int argc, char **argv);
 
         friend class AppBuilder;
 
@@ -71,7 +79,7 @@ namespace pul
         std::vector<CliArg>::const_iterator get_arg_from_config(char short_name) const;
 
         template <typename T>
-        bool insert_arg_if_valid(int argc, char **argv, int current_pos, CliParsedArgs &output, const T &name)
+        void insert_arg_if_valid(int argc, char **argv, int &current_pos, CliParsedArgs &output, const T &name)
         {
             std::vector<CliArg>::const_iterator config_arg = get_arg_from_config(name);
             if (config_arg != m_args_config.end())
@@ -84,19 +92,16 @@ namespace pul
                     }
                     output.flags_with_args[config_arg->short_name] = argv[current_pos + 1];
                     current_pos++;
-                    return true;
                 }
                 else
                 {
                     output.flags.insert(config_arg->short_name);
-                    return true;
                 }
             }
             else
             {
                 panic(std::format("Invalid cli flag: {}", name));
             }
-            return false;
         }
     };
 

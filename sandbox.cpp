@@ -1,5 +1,27 @@
 #include "cliparser.h"
 #include <iostream>
+#include <cassert>
+
+void do_stuff(const pul::CliParsedArgs &config)
+{
+    int counter = 1;
+
+    for (const auto &arg : config.args)
+    {
+        std::cout << counter++ << ": \t";
+        std::cout << arg << std::endl;
+    }
+
+    for (char c : config.flags)
+    {
+        std::cout << "Flag: " << c << std::endl;
+    }
+
+    for (auto [k, v] : config.flags_with_args)
+    {
+        std::cout << "KEY: " << k << ", VALUE: " << v << std::endl;
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -12,29 +34,33 @@ int main(int argc, char *argv[])
             .version("0.1.57")
             .build();
 
-#if DEBUG
-    std::cout << app.app_name() << std::endl;
+    auto [parse_result, parsed_args] = app.parse_args(argc, argv);
 
-    for (const pul::CliArg &arg : app.get_args_config())
+    switch (parse_result)
     {
-        std::cout << arg << std::endl;
+    case pul::ParseResult::HelpRequested:
+    {
+        return 0;
+        break;
     }
-#endif
-
-    auto parsed_args = app.parse_args(argc, argv);
-
-    for (const auto &arg : parsed_args.args)
+    case pul::ParseResult::VersionRequested:
     {
-        std::cout << arg << std::endl;
+        return 0;
+        break;
     }
-
-    for (char c : parsed_args.flags)
+    case pul::ParseResult::Ok:
     {
-        std::cout << "Flag: " << c << std::endl;
+        do_stuff(parsed_args);
+        return 0;
+        break;
     }
-
-    for (auto [k, v] : parsed_args.flags_with_args)
+    case pul::ParseResult::Error:
     {
-        std::cout << "KEY: " << k << ", VALUE: " << v << std::endl;
+        std::cerr << "Invalid command line arguments.\n";
+        return 1;
+        break;
+    }
+    default:
+        assert(false);
     }
 }
