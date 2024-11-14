@@ -1,4 +1,5 @@
 #include "cliparser.h"
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
@@ -22,17 +23,17 @@ int main(int argc, char *argv[])
 
     auto parsed_args = app.parse_args(argc, argv);
 
-    for (const auto &arg : parsed_args.m_args)
+    for (const auto &arg : parsed_args.args)
     {
         std::cout << arg << std::endl;
     }
 
-    for (char c : parsed_args.m_flags)
+    for (char c : parsed_args.flags)
     {
         std::cout << "Flag: " << c << std::endl;
     }
 
-    for (auto [k, v] : parsed_args.m_flags_with_args)
+    for (auto [k, v] : parsed_args.flags_with_args)
     {
         std::cout << "KEY: " << k << ", VALUE: " << v << std::endl;
     }

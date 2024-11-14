@@ -4,6 +4,7 @@
 #include <ranges>
 #include <cctype>
 #include <cstring>
+#include <iostream>
 
 using namespace std::ranges::views;
 
@@ -15,13 +16,6 @@ namespace pul
         print_usage();
         exit(1);
     }
-    CliArg CliArg::make(char short_name, const std::string &long_name, const char *description, bool required, bool needs_arg)
-    {
-        CliArg output(short_name, long_name, description, required, needs_arg);
-        return output;
-    }
-    CliArg::CliArg(char short_name, const std::string &long_name, const char *description, bool required, bool needs_arg)
-        : short_name{short_name}, long_name{long_name}, description{description}, required{required}, needs_arg{needs_arg} {}
 
     std::ostream &operator<<(std::ostream &stream, const CliArg &arg)
     {
@@ -59,12 +53,17 @@ namespace pul
         std::cout << m_app_name << ", version: " << m_version << std::endl;
     }
 
+    void CliApp::print_usage() const
+    {
+        std::cout << "USAGE: " << m_usage << std::endl;
+    }
+
     CliParsedArgs CliApp::parse_args(int argc, char **argv)
     {
         CliParsedArgs output;
-        bool inserted = false;
         for (int i = 0; i < argc; ++i)
         {
+            bool inserted = false;
             if (argv[i][0] == '-')
             {
                 bool short_arg = argv[i][1] != '-';
@@ -86,38 +85,36 @@ namespace pul
             }
             else if (!inserted)
             {
-                output.m_args.emplace_back(argv[i]);
+                output.args.emplace_back(argv[i]);
             }
         }
-        if (output.m_flags.contains('h'))
+        if (output.flags.contains('h'))
         {
             print_help();
             exit(EXIT_SUCCESS);
-            // return output;
         }
-        if (output.m_flags.contains('v'))
+        if (output.flags.contains('v'))
         {
             print_version();
             exit(EXIT_SUCCESS);
-            // return output;
         }
 
         auto not_provided_mandatory = filter(m_args_config, [](const CliArg &arg)
                                              { return arg.required; }) |
                                       filter([&](const CliArg &arg)
-                                             { return !output.m_flags.contains(arg.short_name) && !output.m_flags_with_args.contains(arg.short_name); });
+                                             { return !output.flags.contains(arg.short_name) && !output.flags_with_args.contains(arg.short_name); });
 
 #if DEBUG
-        for (const auto &arg : output.m_args)
+        for (const auto &arg : output.args)
         {
             std::cout << arg << std::endl;
         }
 
-        for (char c : output.m_flags)
+        for (char c : output.flags)
         {
             std::cout << "Flag: " << c << std::endl;
         }
-        for (auto [k, v] : output.m_flags_with_args)
+        for (auto [k, v] : output.flags_with_args)
         {
             std::cout << "KEY: " << k << ", VALUE: " << v << std::endl;
         }
