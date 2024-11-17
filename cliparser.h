@@ -147,6 +147,15 @@ namespace pul
         }
 
         /**
+         * @brief Gets the parsed cli arguments of the application.
+         * @return The CliParsedArgs data structure.
+         */
+        const CliParsedArgs &parsed_args() const
+        {
+            return m_parsed_args;
+        }
+
+        /**
          * @brief Prints the usage information.
          */
         void print_usage() const;

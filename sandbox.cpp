@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
         std::cout << "n set: " << app('n') << '\n';
         std::cout << "g set: " << app('g') << '\n';
         std::cout << "h set: " << app('h') << '\n';
+        std::cout << "Number of positional arguments provided: " << app.parsed_args().positional_args().size() << std::endl;
         return 0;
         break;
     }
