@@ -75,11 +75,41 @@ namespace pul
      * @class CliParsedArgs
      * @brief Represents the parsed command line arguments.
      */
-    struct CliParsedArgs
+    class CliParsedArgs
     {
-        std::unordered_map<char, std::string> flags_with_args; ///< Flags with associated arguments.
-        std::set<char> flags; ///< Set of flags.
-        std::vector<std::string> args; ///< List of positional arguments.
+    public:
+        /**
+         * @brief Gets the flags with arguments.
+         * @return Map of flags with arguments.
+         */
+        const std::unordered_map<char, std::string>& flags_with_args() const 
+        {
+            return m_flags_with_args;
+        }
+
+        /**
+         * @brief Gets the flags that have been set.
+         * @return Set of flags.
+         */
+        const std::set<char>& flags() const
+        {
+            return m_flags;
+        }
+
+        /**
+         * @brief Gets the positional arguments.
+         * @return Vector of positional arguments.
+         */
+        const std::vector<std::string>& positional_args() const
+        {
+            return m_pos_args;
+        }
+
+        friend class CliApp; 
+    private:
+        std::unordered_map<char, std::string> m_flags_with_args; ///< Flags with associated arguments.
+        std::set<char> m_flags; ///< Set of flags.
+        std::vector<std::string> m_pos_args; ///< List of positional arguments.
     };
 
     /**
@@ -108,6 +138,15 @@ namespace pul
         }
 
         /**
+         * @brief Gets the number of mandatory positional arguments of the application.
+         * @return Number of mandatory positional arguments.
+         */
+        size_t num_mandatory_pos_args() const
+        {
+            return m_num_mandatory_pos_args;
+        }
+
+        /**
          * @brief Prints the usage information.
          */
         void print_usage() const;
@@ -130,15 +169,19 @@ namespace pul
          */       
         std::tuple<ParseResult, CliParsedArgs> parse_args(int argc, char **argv);
 
+
+        bool operator()(char c) const;
+
         friend class AppBuilder; ///< Allows AppBuilder to access private members of CliApp.
 
     private:
         std::string m_app_name; ///< Application name.
         std::string m_usage; ///< Usage information.
         std::vector<CliArg> m_args_config; ///< Argument configuration.
-        std::vector<CliParsedArgs> m_parsed_args; ///< Parsed arguments.
+        CliParsedArgs m_parsed_args; ///< Parsed arguments.
         std::string m_version; ///< Application version.
         std::string m_author; ///< Application author.
+        size_t m_num_mandatory_pos_args; ///< Number of mandatory positional arguments.
 
         /**
          * @brief Prints an error message and exits the application.
@@ -183,12 +226,12 @@ namespace pul
                     {
                         panic(std::format("Missing mandatory argument for {}", name));
                     }
-                    output.flags_with_args[config_arg->short_name] = argv[current_pos + 1];
+                    output.m_flags_with_args[config_arg->short_name] = argv[current_pos + 1];
                     current_pos++;
                 }
                 else
                 {
-                    output.flags.insert(config_arg->short_name);
+                    output.m_flags.insert(config_arg->short_name);
                 }
             }
             else
@@ -238,6 +281,13 @@ namespace pul
          * @return Reference to the AppBuilder.
          */
         AppBuilder &usage(const std::string &usage);
+
+        /**
+         * @brief Sets the number of mandatory posistional arguments of the application.
+         * @param num Number of mandatory positional arguments.
+         * @return Reference to the AppBuilder.
+         */
+        AppBuilder &num_mandatory_pos_args(size_t num);
 
          /**
          * @brief Builds the CliApp instance.

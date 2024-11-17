@@ -87,15 +87,15 @@ namespace pul
             }
             else
             {
-                output.args.emplace_back(argv[i]);
+                output.m_pos_args.emplace_back(argv[i]);
             }
         }
-        if (output.flags.contains('h'))
+        if (output.m_flags.contains('h'))
         {
             print_help();
             return {ParseResult::HelpRequested, output};
         }
-        if (output.flags.contains('v'))
+        if (output.m_flags.contains('v'))
         {
             print_version();
             return {ParseResult::VersionRequested, output};
@@ -104,7 +104,7 @@ namespace pul
         auto not_provided_mandatory = filter(m_args_config, [](const CliArg &arg)
                                              { return arg.required; }) |
                                       filter([&](const CliArg &arg)
-                                             { return !output.flags.contains(arg.short_name) && !output.flags_with_args.contains(arg.short_name); });
+                                             { return !output.m_flags.contains(arg.short_name) && !output.m_flags_with_args.contains(arg.short_name); });
 
 #if DEBUG
         for (const auto &arg : output.args)
@@ -130,7 +130,18 @@ namespace pul
             }
             return {ParseResult::Error, output};
         }
+        if (output.positional_args().size() <  num_mandatory_pos_args()) {
+            std::cerr << "Not enough positional arguments provided\n";
+            return {ParseResult::Error, output};
+        }
+
+        m_parsed_args = output;
         return {ParseResult::Ok, output};
+    }
+
+    bool CliApp::operator()(char c) const
+    {
+        return m_parsed_args.flags().contains(c) || m_parsed_args.flags_with_args().contains(c);
     }
 
     AppBuilder::AppBuilder(const std::string &name) : m_app_name{name}
@@ -159,6 +170,12 @@ namespace pul
     AppBuilder &AppBuilder::usage(const std::string &usage)
     {
         m_app.m_usage = std::move(usage);
+        return *this;
+    }
+
+    AppBuilder &AppBuilder::num_mandatory_pos_args(size_t num)
+    {
+        m_app.m_num_mandatory_pos_args = num;
         return *this;
     }
 
