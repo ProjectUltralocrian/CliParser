@@ -121,6 +121,11 @@ namespace pul
             std::cout << "KEY: " << k << ", VALUE: " << v << std::endl;
         }
 #endif
+        if (num_mandatory_pos_args() > output.positional_args().size() - 1) 
+        {
+            std::cerr << "You did not provide all the mandatory positional arguments\n";
+            return {ParseResult::Error, output};
+        }
 
         if (!not_provided_mandatory.empty())
         {
