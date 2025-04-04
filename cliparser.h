@@ -282,7 +282,7 @@ namespace pul
          * @param version Version string.
          * @return Reference to the AppBuilder.
          */
-        AppBuilder &version(const char *version);
+        AppBuilder &version(const char *version = "0.0.1");
 
         /**
          * @brief Sets the usage information of the application.
